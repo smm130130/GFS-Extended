@@ -17,9 +17,9 @@ public class Client {
 	
 	public static void main(String[] args) throws IOException {
 		if (args.length > 0) {
-	        int firstArg = Integer.parseInt(args[0]);		        
+	        String fileName = (args[0]).toString();		        
 		
-			BufferedReader reader = new BufferedReader(new FileReader("resource/instruction"+firstArg+".txt"));
+			BufferedReader reader = new BufferedReader(new FileReader("resource/instruction"+fileName));
 			Client client = new Client();
 			String line = null;
 			try {

@@ -2,9 +2,15 @@ package server;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
+
+import utilities.UsefulMethods;
 
 public class HandleFileReadWrite {
 
@@ -87,6 +93,54 @@ public class HandleFileReadWrite {
 	}
 
 	public void createAndWriteAfterFailure(String serverNumber) {
-		
+		File[] files = new File("/home/004/s/sm/smm130130/AOSproject2/FileSystem/server"+serverNumber).listFiles();
+		int servNum = Integer.parseInt(serverNumber);
+		showFiles(files, servNum);
+	}
+	
+	private void showFiles(File[] files, int serverNumber) {
+	    for (File file : files) {
+	        if (file.isDirectory()) {
+	            System.out.println("Directory: " + file.getName());
+	            showFiles(file.listFiles(), serverNumber); // Calls same method again.
+	        } else {
+	        	String fileName[] = file.getName().split("\\.");
+	            System.out.println("File: " + file.getName() + "File Size is : " + fileName[0]);
+	            int copyToServer = UsefulMethods.getUsefulMethodsInstance().randomServer();
+	            copyFiles(serverNumber, copyToServer, file.getName());
+	        } 
+	    }
+	}
+	
+	private void copyFiles(int copyFromServer, int copyToServer, String filename) {
+		InputStream inStream = null;
+		OutputStream outStream = null;
+	 
+	    	try{
+	 
+	    	    File afile =new File("/home/004/s/sm/smm130130/AOSproject2/FileSystem/server"+copyFromServer+"/"+filename);
+	    	    File bfile =new File("/home/004/s/sm/smm130130/AOSproject2/FileSystem/server"+copyToServer+"/"+filename);
+	 
+	    	    inStream = new FileInputStream(afile);
+	    	    outStream = new FileOutputStream(bfile);
+	 
+	    	    byte[] buffer = new byte[1024];
+	 
+	    	    int length;
+	    	    //copy the file content in bytes 
+	    	    while ((length = inStream.read(buffer)) > 0){
+	 
+	    	    	outStream.write(buffer, 0, length);
+	 
+	    	    }
+	 
+	    	    inStream.close();
+	    	    outStream.close();
+	 
+	    	    System.out.println("File is copied successful!");
+	 
+	    	}catch(IOException e){
+	    		e.printStackTrace();
+	    	}
 	}
 }

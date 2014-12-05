@@ -19,6 +19,9 @@ public class MetaDataServer {
 	}
 
 	public void run() {
+		Thread th = new Thread(new HandleServers());
+		th.start();
+		
 		Properties MetadataServerPort = UsefulMethods.getUsefulMethodsInstance().getPropertiesFile("spec.properties");
 		String portString = MetadataServerPort.getProperty("metadataport");//Integer.parseInt(args[1]);
 		int port = Integer.parseInt(portString);
