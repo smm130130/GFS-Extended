@@ -110,8 +110,8 @@ public class MetadataStorage {
 				+ " chunkName:"+chunkName+ " byteSize:"+byteSize+ " lastModified:"+ usefulmethods.getTime());
 	}
 	
-	public int readHashMap(String fileName, String chunkName) {
-		int returnServerNumber = 0;
+	public String readHashMap(String fileName, String chunkName) {
+		StringBuilder sb = new StringBuilder();
 		Iterator<Entry<String, HashMap<String, ArrayList<Object>>>> it = hashMap.entrySet().iterator();
 	    while (it.hasNext()) {
 	        Map.Entry<String, HashMap<String, ArrayList<Object>>> pairs = (Entry<String, HashMap<String, ArrayList<Object>>>)it.next();
@@ -129,7 +129,11 @@ public class MetadataStorage {
 			        	internalArrayList = (ArrayList<Object>) chunk.getValue();
 						lock.lock();
 						try {
-							returnServerNumber = (int) internalArrayList.get(0);
+							sb.append(internalArrayList.get(0));
+							sb.append(":");
+							sb.append(internalArrayList.get(1));
+							sb.append(":");
+							sb.append(internalArrayList.get(2));
 						} finally {
 							lock.unlock();
 						}
@@ -137,7 +141,7 @@ public class MetadataStorage {
 		        }
 	        }
 	    }
-		return returnServerNumber;
+		return sb.toString();
 	}
 
 	public String getLastChunkInfo(String fileName) {

@@ -9,6 +9,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.Properties;
 
 import utilities.UsefulMethods;
 
@@ -104,8 +106,7 @@ public class HandleFileReadWrite {
 	            System.out.println("Directory: " + file.getName());
 	            showFiles(file.listFiles(), serverNumber); // Calls same method again.
 	        } else {
-	        	String fileName[] = file.getName().split("\\.");
-	            System.out.println("File: " + file.getName() + "File Size is : " + fileName[0]);
+	            System.out.println("File: " + file.getName());
 	            int copyToServer = UsefulMethods.getUsefulMethodsInstance().randomServer();
 	            copyFiles(serverNumber, copyToServer, file.getName());
 	        } 
@@ -142,5 +143,28 @@ public class HandleFileReadWrite {
 	    	}catch(IOException e){
 	    		e.printStackTrace();
 	    	}
+	}
+	
+	private ArrayList<Object> loadBalancing(int serverNumber) {
+		ArrayList<Object> directoryAttr = new ArrayList<Object>();
+		int noOfFiles = 0;
+		long dirSize = 0L;
+		Properties prop = UsefulMethods.getUsefulMethodsInstance().getPropertiesFile("spec.properties");
+		
+		int noOfServers = Integer.parseInt(prop.getProperty("numofservers"));
+		long directorySize = Long.parseLong(prop.getProperty("directorySize"));
+		
+		for(int i=0; i< noOfServers; i++) {
+			File[] files = new File("/home/004/s/sm/smm130130/AOSproject2/FileSystem/server"+i).listFiles();
+			 for (File file : files) {
+				 	noOfFiles++;
+		            dirSize = dirSize + file.length();		            
+			 }
+		}
+		long remainingSize = directorySize - dirSize;
+		directoryAttr.add(noOfFiles);
+		directoryAttr.add(remainingSize);
+
+		return directoryAttr;
 	}
 }

@@ -89,25 +89,26 @@ public class MetadataHandler implements Runnable {
 					sendAppendWelcomeMessage(sock, lastChunkInfo);			
 				}
 				else if(action.equalsIgnoreCase("read")) {
+					int serverNumber = 0;
 					System.out.println("metadataHandler read operation" + heartbeatReceived);
 					String fileName = parts[1].split("-")[0];
 					String chunkName = parts[1];
-					int serverNumber = storage.readHashMap(fileName, chunkName);
-					if(heartbeatReceived && lastMsgSentTime.get(serverNumber) != null) {
-						System.out.println("failure detection in progrees....");
-						if(checkForAvailabilityofServer(serverNumber)) {
-							sendReadWelcomeMessage(sock, serverNumber);
-						} 
-						else {
-							serverNumber = -1;
-							sendReadWelcomeMessage(sock, serverNumber);
-							System.out.println("Server not available");
+					String serverNumberString = storage.readHashMap(fileName, chunkName);
+					
+					for(int i=0; i<3 ;i++) {
+						serverNumber = Integer.parseInt(serverNumberString.split(":")[i]);
+						if(heartbeatReceived && lastMsgSentTime.get(serverNumber) != null) {
+							System.out.println("failure detection in progrees....");
+							if(checkForAvailabilityofServer(serverNumber)) {
+								break;
+							} else{
+								serverNumber = -1;
+								System.out.println("Server"+serverNumber+" down");
+								continue;
+							}
 						}
-					} 
-					else {
-						System.out.println("No heartbeat msg yet so no failure detection");
-						sendReadWelcomeMessage(sock, serverNumber);
 					}
+					sendReadWelcomeMessage(sock, serverNumber);
 				}
 				else if(action.equalsIgnoreCase("heartbeat")) {
 					System.out.println("metadataHandler heartBeat operation"+ UsefulMethods.getUsefulMethodsInstance().getTime()+ " Server Number : "+ parts[1]);
