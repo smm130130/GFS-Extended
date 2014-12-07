@@ -23,7 +23,7 @@ public class ServerHeartBeat implements Runnable {
 		String portString = ServerPort.getProperty("metadataport");//Integer.parseInt(args[1]);
 		int port = Integer.parseInt(portString.trim());
 		
-		String filePath = "/home/004/s/sm/smm130130/AOSproject2/FileSystem/server"+serverNumber;
+		String filePath = "/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+serverNumber;
 		
 		try {
 			@SuppressWarnings("resource")
@@ -40,6 +40,9 @@ public class ServerHeartBeat implements Runnable {
 				File[] files = new File(filePath).listFiles();
 				if(files.length > 0) {
 					showFiles(files);
+				} else {
+					out.println("heartbeat:" + serverNumber + ":" + null + ":"+ 0 + ":" + System.currentTimeMillis());
+					out.flush();
 				}
 			}
 		} catch (IOException e) {

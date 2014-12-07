@@ -30,7 +30,7 @@ public class DivideFiles {
 			byte[] buffer = new byte[sizeOfFiles];
 	        while ((tmp = bis.read(buffer)) > 0) {
 	    		randomServer = um.randomServer();
-	            File newFile=new File("/home/004/s/sm/smm130130/AOSproject2/server/Server"+randomServer+"/"+name+""+partCounter++);
+	            File newFile=new File("/home/004/s/sm/smm130130/AOSproject3/server/Server"+randomServer+"/"+name+""+partCounter++);
 	            newFile.createNewFile();
 	            out = new FileOutputStream(newFile);
 	            out.write(buffer,0,tmp);

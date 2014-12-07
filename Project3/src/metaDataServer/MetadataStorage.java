@@ -87,9 +87,8 @@ public class MetadataStorage {
 		        	Iterator<Entry<String, ArrayList<Object>>> internal = internalHashMap.entrySet().iterator();
 			        while(internal.hasNext()) {
 			        	Map.Entry<String, ArrayList<Object>> chunk = (Map.Entry<String, ArrayList<Object>>)internal.next();
-			        	System.out.println("chunkname "+ (chunk.getKey()).toString());
+			        	//System.out.println("chunkname update"+ (chunk.getKey()).toString());
 			        	if(chunkName.equalsIgnoreCase((chunk.getKey()).toString())) {
-			        		System.out.println("old file present" + chunkName);
 				        	ArrayList<Object> internalArrayList = new ArrayList<Object>();
 				        	internalArrayList = (ArrayList<Object>) chunk.getValue();
 				        	for(int i=0; i< internalArrayList.size(); i++) {
@@ -106,8 +105,8 @@ public class MetadataStorage {
 		}
 		
 	    System.out.println(hashMap);
-	    System.out.println("HeartBeat Update Server:"+serverNumber+ " file:"+fileName+ ""
-				+ " chunkName:"+chunkName+ " byteSize:"+byteSize+ " lastModified:"+ usefulmethods.getTime());
+	    //System.out.println("HeartBeat Update Server:"+serverNumber+ " file:"+fileName+ ""
+				//+ " chunkName:"+chunkName+ " byteSize:"+byteSize+ " lastModified:"+ usefulmethods.getTime());
 	}
 	
 	public String readHashMap(String fileName, String chunkName) {
@@ -217,10 +216,46 @@ public class MetadataStorage {
 		} finally {
 			lock.unlock();
 		}
-		System.out.println("create append for : "+filename+"-"+chunkNumber+" hashmap is "+hashMap);
+		//System.out.println("create append for : "+filename+"-"+chunkNumber+" hashmap is "+hashMap);
 	}
 	
-	public void changeAfterFailure(int serverNumber) {
+	public void changeAfterFailure(int serverNumber, int copyToSever, String fileName, String chunkName) {
+		lock.lock();
+		try{
+			System.out.println("Changing metadata server");
+			Iterator<Entry<String, HashMap<String, ArrayList<Object>>>> it = hashMap.entrySet().iterator();
+		    while (it.hasNext()) {
+		        Map.Entry<String, HashMap<String, ArrayList<Object>>> pairs = (Entry<String, HashMap<String, ArrayList<Object>>>)it.next();
+		        HashMap<String, ArrayList<Object>> internalHashMap = new HashMap<String, ArrayList<Object>>();
+		        
+		        if(fileName.equalsIgnoreCase((pairs.getKey()).toString())) {
+		        	internalHashMap = (HashMap<String, ArrayList<Object>>) pairs.getValue();
+		        	Iterator<Entry<String, ArrayList<Object>>> internal = internalHashMap.entrySet().iterator();
+			        while(internal.hasNext()) {
+			        	Map.Entry<String, ArrayList<Object>> chunk = (Map.Entry<String, ArrayList<Object>>)internal.next();
+			        	//System.out.println("chunkname update"+ (chunk.getKey()).toString());
+			        	if(chunkName.equalsIgnoreCase((chunk.getKey()).toString())) {
+				        	ArrayList<Object> internalArrayList = new ArrayList<Object>();
+				        	internalArrayList = (ArrayList<Object>) chunk.getValue();
+				        	for(int i=0; i< 3; i++) {
+				        		int downServer = (int) internalArrayList.get(i);
+				        		if(downServer == serverNumber) {
+				        			internalArrayList.set(i, copyToSever);
+				        		}
+				        	}
+				        	internalHashMap.put(chunkName, internalArrayList);
+			        	}
+			        	hashMap.put(fileName, internalHashMap);
+			        }
+		        }
+		    }
+		} finally {
+			lock.unlock();
+		}
+	}
+	
+	public ArrayList<Integer> getFailureReplicas(int serverNumber, String fileName, String chunkName) {
+		ArrayList<Integer> replicaServerNumber = new ArrayList<>();
 		lock.lock();
 		try{
 			Iterator<Entry<String, HashMap<String, ArrayList<Object>>>> it = hashMap.entrySet().iterator();
@@ -228,26 +263,28 @@ public class MetadataStorage {
 		        Map.Entry<String, HashMap<String, ArrayList<Object>>> pairs = (Entry<String, HashMap<String, ArrayList<Object>>>)it.next();
 		        HashMap<String, ArrayList<Object>> internalHashMap = new HashMap<String, ArrayList<Object>>();
 		        
-		        String file = pairs.getKey();
-		        internalHashMap = (HashMap<String, ArrayList<Object>>) pairs.getValue();
-	        	Iterator<Entry<String, ArrayList<Object>>> internal = internalHashMap.entrySet().iterator();
-		        while(internal.hasNext()) {
-		        	Map.Entry<String, ArrayList<Object>> chunk = (Map.Entry<String, ArrayList<Object>>)internal.next();
-		        	ArrayList<Object> internalArrayList = new ArrayList<Object>();
-		        	
-		        	String chunkName = chunk.getKey();
-		        	internalArrayList = (ArrayList<Object>) chunk.getValue();
-		        	for(int i=0; i< 3; i++) {
-						if((int)internalArrayList.get(i) == serverNumber) {
-							internalArrayList.set(i, serverNumber);
-						}
-		        	}
-		        	internalHashMap.put(chunkName, internalArrayList);
+		        if(fileName.equalsIgnoreCase((pairs.getKey()).toString())) {
+		        	internalHashMap = (HashMap<String, ArrayList<Object>>) pairs.getValue();
+		        	Iterator<Entry<String, ArrayList<Object>>> internal = internalHashMap.entrySet().iterator();
+			        while(internal.hasNext()) {
+			        	Map.Entry<String, ArrayList<Object>> chunk = (Map.Entry<String, ArrayList<Object>>)internal.next();
+			        	//System.out.println("chunkname update"+ (chunk.getKey()).toString());
+			        	if(chunkName.equalsIgnoreCase((chunk.getKey()).toString())) {
+				        	ArrayList<Object> internalArrayList = new ArrayList<Object>();
+				        	internalArrayList = (ArrayList<Object>) chunk.getValue();
+				        	for(int i=0; i< 3; i++) {
+				        		int req = (int) internalArrayList.get(i);
+				        		if(req != serverNumber) {
+				        			replicaServerNumber.add(req);
+				        		}
+				        	}
+			        	}
+			        }
 		        }
-		        hashMap.put(file, internalHashMap);
 		    }
 		} finally {
 			lock.unlock();
 		}
+		return replicaServerNumber;
 	}
 }

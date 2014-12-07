@@ -19,7 +19,7 @@ public class Client {
 		if (args.length > 0) {
 	        String fileName = (args[0]).toString();		        
 		
-			BufferedReader reader = new BufferedReader(new FileReader("resource/instruction"+fileName));
+			BufferedReader reader = new BufferedReader(new FileReader("resource/"+fileName));
 			Client client = new Client();
 			String line = null;
 			try {
@@ -41,6 +41,8 @@ public class Client {
 			} finally {
 				reader.close();
 			}
+		} else {
+			System.out.println("Provide an input file");
 		}
 	}
 
@@ -69,9 +71,9 @@ public class Client {
 			lastChunkInfo = SetMetadataServer("append", filename+":"+msgSize);
 			String[] lastInfos = lastChunkInfo.split(":");
 			String chunkName = lastInfos[0];
-			int ServerNumber = Integer.parseInt(lastInfos[1]);
-			int firstServerNumber = Integer.parseInt(lastInfos[2]);
-			int secondServerNumber = Integer.parseInt(lastInfos[3]);
+			int ServerNumber = Integer.parseInt(lastInfos[1]); int replicaServerNumber = 0;
+			int firstServerNumber = Integer.parseInt(lastInfos[2]); int firstReplicaServerNumber = 0;
+			int secondServerNumber = Integer.parseInt(lastInfos[3]); int secondReplicaServerNumber = 0;
 			if((ServerNumber == -1 || firstServerNumber == -1 || secondServerNumber == -1) && appendRetry < 2) {
 				// what happens when after the second try, the server comes up but the metaserver has already 
 				//started serving other requests?
@@ -84,9 +86,14 @@ public class Client {
 				appendToFile(filename, message);
 			}
 			if(appendRetry < 2) {
-				Thread master = new Thread(new ClientUpdateFiles(chunkName, ServerNumber, message));
-				Thread replica1 = new Thread(new ClientUpdateFiles(chunkName, firstServerNumber, message));
-				Thread replica2 = new Thread(new ClientUpdateFiles(chunkName, secondServerNumber, message));
+				if(lastInfos.length > 5) {
+					replicaServerNumber = Integer.parseInt(lastInfos[5]);
+					firstReplicaServerNumber = Integer.parseInt(lastInfos[6]);
+					secondReplicaServerNumber = Integer.parseInt(lastInfos[7]);
+				}
+				Thread master = new Thread(new ClientUpdateFiles(chunkName, ServerNumber, message, replicaServerNumber));
+				Thread replica1 = new Thread(new ClientUpdateFiles(chunkName, firstServerNumber, message, firstReplicaServerNumber));
+				Thread replica2 = new Thread(new ClientUpdateFiles(chunkName, secondServerNumber, message, secondReplicaServerNumber));
 				//SetUpAppendNetworking(chunkName, ServerNumber, message);
 				master.start();
 				replica1.start();
@@ -144,7 +151,7 @@ public class Client {
 			SetUpReadNetworking(otherServerNumber, otherChunkName, 0, otherBytesToRead);
 		}
 		try {
-			Thread.sleep(15000);
+			Thread.sleep(5000);
 		} catch(Exception e) {
 			e.printStackTrace();
 		}

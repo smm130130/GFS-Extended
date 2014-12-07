@@ -31,10 +31,12 @@ public class ServerHandler implements Runnable {
 					hfrw.readFromFile(parts[1], parts[2], Integer.parseInt(parts[3]), Integer.parseInt(parts[4]));
 				}
 				else if(parts[0].equalsIgnoreCase("append")) {
-					hfrw.appendToChunk(parts[1], Integer.parseInt(parts[2]), parts[3]);
+					int replicaServerNumber = Integer.parseInt(parts[4]);
+					hfrw.appendToChunk(parts[1], Integer.parseInt(parts[2]), parts[3], replicaServerNumber);
 				}
 				else if(parts[0].equalsIgnoreCase("failure")) {
-					hfrw.createAndWriteAfterFailure(parts[1]);
+					System.out.println("The failure got is: "+ msg);
+					hfrw.copyFiles(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), parts[3]);
 				}
 			}
 		} catch (IOException e) {

@@ -11,20 +11,22 @@ public class ClientUpdateFiles implements Runnable {
 	
 	String chunkName = null;
 	int serverNumber = 0;
+	int replicaServerNumber = 0;
 	String message = null;
 
-	public ClientUpdateFiles(String chunkName, int serverNumber, String message) {
+	public ClientUpdateFiles(String chunkName, int serverNumber, String message, int replicaServerNumber) {
 		this.chunkName = chunkName;
 		this.serverNumber = serverNumber;
 		this.message = message;
+		this.replicaServerNumber = replicaServerNumber;
 	}
 	
 	@Override
 	public void run() {
-		SetUpAppendNetworking(chunkName, serverNumber, message);
+		SetUpAppendNetworking(chunkName, serverNumber, message, replicaServerNumber);
 	}
 
-	private void SetUpAppendNetworking(String chunkName, int serverNumber, String message) {
+	private void SetUpAppendNetworking(String chunkName, int serverNumber, String message, int replicaServerNumber) {
 		Properties ServerPort = UsefulMethods.getUsefulMethodsInstance().getPropertiesFile("spec.properties");
 		
 		String serverName = ServerPort.getProperty("server"+serverNumber);
@@ -37,7 +39,7 @@ public class ClientUpdateFiles implements Runnable {
 		try {
 			client = new Socket(serverName, port);
 			PrintWriter out1 = new PrintWriter(client.getOutputStream(), true);
-			out1.println("append:"+chunkName+":"+serverNumber+":"+message);
+			out1.println("append:"+chunkName+":"+serverNumber+":"+message+":"+replicaServerNumber);
 			client.close();out1.close();			
 		}
 		catch (IOException e) {
