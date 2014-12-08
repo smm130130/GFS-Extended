@@ -48,22 +48,42 @@ public class Client {
 
 	private void createFile(String filename, String message) throws IOException {
 		// consult m-server and create a file
+		boolean status = true;
 		System.out.println("create request filename: "+filename);
 		String returnedString = (SetMetadataServer("create",filename));
 		int masterServerNumber = Integer.parseInt(returnedString.split(":")[1]);
 		int secondServerNumber = Integer.parseInt(returnedString.split(":")[2]);
 		int thirdServerNumber = Integer.parseInt(returnedString.split(":")[3]);
+		for(int i=1; i<4; i++) {
+			int servNum = Integer.parseInt(returnedString.split(":")[i]);
+			status = new GetServerStatus().getServerStatus(servNum);
+			if(!status) break;
+		}
 		//SetUpNetworking(masterServerNumber, secondServerNumber, thirdServerNumber, filename, message);
-		Thread master = new Thread(new ClientCreateFiles(masterServerNumber, filename, message));
-		Thread replica1 = new Thread(new ClientCreateFiles(secondServerNumber, filename, message));
-		Thread replica2 = new Thread(new ClientCreateFiles(thirdServerNumber, filename, message));
-		master.start();
-		replica1.start();
-		replica2.start();
+		if(status) {
+			Thread master = new Thread(new ClientCreateFiles(masterServerNumber, filename, message));
+			Thread replica1 = new Thread(new ClientCreateFiles(secondServerNumber, filename, message));
+			Thread replica2 = new Thread(new ClientCreateFiles(thirdServerNumber, filename, message));
+			master.start();
+			replica1.start();
+			replica2.start();
+		} else {
+			if(createRetry < 2) {
+				createRetry++;
+				System.out.println("create aborted trying again");
+				try{
+					Thread.sleep(5000);
+				} catch(InterruptedException e){
+					e.printStackTrace();
+				}
+				createFile(filename, message);
+			}
+		}
 	}
 
 	private void appendToFile(String filename, String message) {
 		System.out.println("append request filename : "+filename);
+		boolean status = true;
 		String lastChunkInfo = null;
 		filename = filename.split("\\.")[0];
 		long msgSize = message.length();
@@ -74,18 +94,12 @@ public class Client {
 			int ServerNumber = Integer.parseInt(lastInfos[1]); int replicaServerNumber = 0;
 			int firstServerNumber = Integer.parseInt(lastInfos[2]); int firstReplicaServerNumber = 0;
 			int secondServerNumber = Integer.parseInt(lastInfos[3]); int secondReplicaServerNumber = 0;
-			if((ServerNumber == -1 || firstServerNumber == -1 || secondServerNumber == -1) && appendRetry < 2) {
-				// what happens when after the second try, the server comes up but the metaserver has already 
-				//started serving other requests?
-				appendRetry++;
-				try {
-					Thread.sleep(2000);
-				} catch(Exception e) {
-					e.printStackTrace();
-				}
-				appendToFile(filename, message);
+			for(int i=1; i<4; i++) {
+				int servNum = Integer.parseInt(lastChunkInfo.split(":")[i]);
+				status = new GetServerStatus().getServerStatus(servNum);
+				if(!status) break;
 			}
-			if(appendRetry < 2) {
+			if(status) {
 				if(lastInfos.length > 5) {
 					replicaServerNumber = Integer.parseInt(lastInfos[5]);
 					firstReplicaServerNumber = Integer.parseInt(lastInfos[6]);
@@ -99,7 +113,16 @@ public class Client {
 				replica1.start();
 				replica2.start();
 			} else {
-				System.out.println("Server Unavailable, tried reaching "+appendRetry+ " times");
+				if(appendRetry < 2) {
+					appendRetry++;
+					System.out.println("append aborted trying again");
+					try{
+						Thread.sleep(5000);
+					} catch(InterruptedException e){
+						e.printStackTrace();
+					}
+					appendToFile(filename, message);
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -115,54 +138,21 @@ public class Client {
 		int seekPosition = Integer.parseInt(offset) % 8192;
 		String returnedString = (SetMetadataServer("read", chunkName));
 		String[] parts = returnedString.split(":");
-		int serverNumber = Integer.parseInt(parts[1]);
-		
-		if((serverNumber == 0 || serverNumber == -1) && readRetry < 2) {
-			readRetry++;
-			System.out.println(readRetry+" Trying to reach server......");
-			try {
-				Thread.sleep(2000);
-			} catch(Exception e) {
-				e.printStackTrace();
+		for(int i=1; i<4 ;i++) {
+			int serverNumber = Integer.parseInt(parts[i]);
+			boolean success = SetUpReadNetworking(serverNumber, chunkName, seekPosition, bytesToRead);
+			if(success) {
+				System.out.println("Reading from server "+serverNumber);
+				break;
+			} else {
+				System.out.println("Server"+serverNumber+" down");
+				continue;
 			}
-			returnedString = (SetMetadataServer("read", chunkName));
-			serverNumber = Integer.parseInt(returnedString.split(":")[1]);
-			if((serverNumber == 0 || serverNumber == -1) && readRetry < 2) {
-				readFromFile(filename, offset, bytesToRead);
-			}
-		}
-		
-		// IF the read extends in more than one file
-		if((seekPosition+(bytesToRead)) > 8192) {
-			int otherBytesToRead = seekPosition+(bytesToRead) - 8192;
-			bytesToRead = 8192 - seekPosition;
-			int otherChunkNumber = chunkNumber+1;
-			String otherChunkName = chunks[0]+otherChunkNumber;
-			int otherServerNumber = 0;
-			String otherReturnedString = (SetMetadataServer("read", chunkName));
-			String[] otherParts = otherReturnedString.split(":");
-			if(otherParts.length > 2) {
-				System.out.println("Server Unavailable");
-			} 
-			else {
-				otherServerNumber = Integer.parseInt(otherParts[1]);
-			}
-			System.out.println("Main Chunk : "+serverNumber +" Other chunks : "+otherServerNumber);
-			SetUpReadNetworking(otherServerNumber, otherChunkName, 0, otherBytesToRead);
-		}
-		try {
-			Thread.sleep(5000);
-		} catch(Exception e) {
-			e.printStackTrace();
-		}
-		if(readRetry < 2) {
-			SetUpReadNetworking(serverNumber, chunkName, seekPosition, bytesToRead);
-		} else {
-			System.out.println("Server Unavailable, tried reaching "+readRetry+ " times");
 		}
 	}
 	
-	private void SetUpReadNetworking(int serverNumber, String filename, int seekPosition, int bytesToRead) {
+	private boolean SetUpReadNetworking(int serverNumber, String filename, int seekPosition, int bytesToRead) {
+		boolean sucess = true;
 		Properties ServerPort = UsefulMethods.getUsefulMethodsInstance().getPropertiesFile("spec.properties");
 		
 		String serverName = ServerPort.getProperty("server"+serverNumber);
@@ -180,7 +170,9 @@ public class Client {
 		}
 		catch (IOException e) {
 			System.out.println("Server Unavailable");
+			sucess = false;
 		}
+		return sucess;
 	}
 	
 	private String SetMetadataServer(String action, String filename) throws IOException {

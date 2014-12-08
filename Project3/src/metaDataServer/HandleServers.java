@@ -6,10 +6,24 @@ import java.util.Properties;
 import utilities.UsefulMethods;
 
 public class HandleServers implements Runnable {
+	
 	MetadataHandler handler = new MetadataHandler();
-	ArrayList<Integer> unavailServers = new ArrayList<>();
+	public static volatile ArrayList<Integer> unavailServers = new ArrayList<>();
+	private static volatile HandleServers instance = null;
+	
 	public HandleServers() {
 		
+	}
+	
+	public static HandleServers getHandleServersInstance() {
+		synchronized (UsefulMethods.class) {
+			// Double check
+			if (instance == null) {
+				System.out.println("HandleServers : I am being created");
+				instance = new HandleServers();
+			}
+		}
+		return instance;
 	}
 	
 	@Override
@@ -31,7 +45,7 @@ public class HandleServers implements Runnable {
 		int numOfServers = Integer.parseInt(ServerPort.getProperty("numofservers"));
 		boolean status = true;
 		while(true) {
-			sleepSomeSeconds(5000);
+			sleepSomeSeconds(2000);
 			for(int i=1; i< numOfServers+1; i++) {
 				if(checkUnavilServers(i)) {
 					status = handler.checkForAvailabilityofServer(i);
@@ -48,7 +62,7 @@ public class HandleServers implements Runnable {
 		}
 	}
 	
-	private boolean checkUnavilServers(int serverNumber) {
+	public boolean checkUnavilServers(int serverNumber) {
 		for(int i=0; i< unavailServers.size(); i++) {
 			int unServ = unavailServers.get(i);
 			if(serverNumber == unServ) {

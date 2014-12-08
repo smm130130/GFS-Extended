@@ -15,6 +15,9 @@ public class HandleFailures implements Runnable {
 
 	int serverNumber = 0;
 	MetadataStorage storage = MetadataStorage.getMetadataStorageInstance();
+	Properties prop = UsefulMethods.getUsefulMethodsInstance().getPropertiesFile("spec.properties");
+	String fileSystem = prop.getProperty("filesystem");
+			
 	public HandleFailures(int serverNumber) {
 		this.serverNumber = serverNumber;
 	}
@@ -25,7 +28,7 @@ public class HandleFailures implements Runnable {
 	}
 	
 	public void iterateThroughFileSystem() {
-		File[] files = new File("/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+serverNumber).listFiles();
+		File[] files = new File(fileSystem+"/server"+serverNumber).listFiles();
 		for (File file : files) {
 			String chunkName = file.getName();
 			String fileName = chunkName.split("-")[0];
@@ -50,7 +53,7 @@ public class HandleFailures implements Runnable {
 			} else {
 				long dir = 0L;
 				serverNum = i;
-				File[] files = new File("/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+i).listFiles();
+				File[] files = new File(fileSystem+"/server"+i).listFiles();
 					for (File file : files) {
 						 	dir = dir + file.length();		            
 					 }

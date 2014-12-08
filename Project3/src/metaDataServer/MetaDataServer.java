@@ -37,7 +37,7 @@ public class MetaDataServer {
 						Thread t = new Thread(new MetadataHandler(requestQueue.poll()));
 						t.start();
 
-						Thread.sleep(2000);		
+						Thread.sleep(3000);		
 					}			
 				} catch(InterruptedException e) {
 					e.printStackTrace();

@@ -49,8 +49,7 @@ public class MetadataHandler implements Runnable {
 						UsefulMethods.lastRequestCompleted = true;
 						System.out.println("metadataHandler create operation");
 						String filename = parts[1];
-						int serverNumber = usefulmethods.randomServer();
-						ArrayList<Integer> serverNumbers = generateReplicaServerNumbers(serverNumber);
+						ArrayList<Integer> serverNumbers = usefulmethods.loadBalancing();
 						if(storage.fileExists(filename)) {
 							System.out.println("file exits appending the message at the end");
 						}
@@ -73,7 +72,7 @@ public class MetadataHandler implements Runnable {
 							int fileBit = Integer.parseInt(chunkName.split("-")[1]);
 							
 							ArrayList<Integer> servNums = new ArrayList<>();
-							servNums = UsefulMethods.getUsefulMethodsInstance().loadBalancing();
+							servNums = usefulmethods.loadBalancing();
 							
 							storage.createAppendHashMap(parts[1], servNums, fileBit+1, msgSize);
 							lastChunkInfo = lastChunkInfo+":"+servNums.get(0)+":"+servNums.get(1)+":"+servNums.get(2);
@@ -93,26 +92,12 @@ public class MetadataHandler implements Runnable {
 						sendAppendWelcomeMessage(sock, lastChunkInfo);			
 					}
 					else if(action.equalsIgnoreCase("read")) {
-						int serverNumber = 0; UsefulMethods.lastRequestCompleted = true;
+						UsefulMethods.lastRequestCompleted = true;
 						System.out.println("metadataHandler read operation" + heartbeatReceived);
 						String fileName = parts[1].split("-")[0];
 						String chunkName = parts[1];
 						String serverNumberString = storage.readHashMap(fileName, chunkName);
-						
-						for(int i=0; i<3 ;i++) {
-							serverNumber = Integer.parseInt(serverNumberString.split(":")[i]);
-							if(heartbeatReceived && lastMsgSentTime.get(serverNumber) != null) {
-								//System.out.println("failure detection in progrees....");
-								if(checkForAvailabilityofServer(serverNumber)) {
-									break;
-								} else{
-									serverNumber = -1;
-									System.out.println("Server"+serverNumber+" down");
-									continue;
-								}
-							}
-						}
-						sendReadWelcomeMessage(sock, serverNumber);
+						sendReadWelcomeMessage(sock, serverNumberString);
 					}
 					else if(action.equalsIgnoreCase("heartbeat")) {
 						System.out.println("metadataHandler heartBeat operation"+ UsefulMethods.getUsefulMethodsInstance().getTime()+ " Server Number : "+ parts[1]);
@@ -140,22 +125,6 @@ public class MetadataHandler implements Runnable {
 				e.printStackTrace();
 			}
 		}
-	}
-
-	private ArrayList<Integer> generateReplicaServerNumbers(int serverNumber) {
-		ArrayList<Integer> serverNumbers = new ArrayList<Integer>();
-		serverNumbers.add(serverNumber);
-		int secondServerNumber = serverNumber;
-		while(secondServerNumber == serverNumber) {
-			secondServerNumber = usefulmethods.randomServer();
-		}
-		serverNumbers.add(secondServerNumber);
-		int thirdServerNumber = secondServerNumber;
-		while(thirdServerNumber == secondServerNumber || thirdServerNumber == serverNumber) {
-			thirdServerNumber = usefulmethods.randomServer();
-		}
-		serverNumbers.add(thirdServerNumber);
-		return serverNumbers;
 	}
 
 	private void updateLastMsgSentTime(int serverNumber) {
@@ -196,7 +165,7 @@ public class MetadataHandler implements Runnable {
         }
     }
 	
-	private void sendReadWelcomeMessage(Socket client, int serverNumber) throws IOException {
+	private void sendReadWelcomeMessage(Socket client, String serverNumber) throws IOException {
 		try {
 			UsefulMethods.lastRequestCompleted = false;
         	writer = new PrintWriter(client.getOutputStream(), true);

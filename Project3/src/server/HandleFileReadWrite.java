@@ -14,6 +14,9 @@ import java.util.Properties;
 import utilities.UsefulMethods;
 
 public class HandleFileReadWrite {
+	
+	Properties prop = UsefulMethods.getUsefulMethodsInstance().getPropertiesFile("spec.properties");
+	String filesystem = prop.getProperty("filesystem");
 
 	public void createAndWriteToFile(String filename,String serverNumber, String message) {
 		String[] chunk = filename.split("\\.");
@@ -21,7 +24,7 @@ public class HandleFileReadWrite {
 		try {
 			int serverNum = Integer.parseInt(serverNumber);
 
-			FileWriter fileWritter = new FileWriter("/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+serverNum+"/"+chunkName, true);
+			FileWriter fileWritter = new FileWriter(filesystem+"/server"+serverNum+"/"+chunkName, true);
 			BufferedWriter bufferWritter = new BufferedWriter(fileWritter);
 			bufferWritter.write(message);
 			bufferWritter.flush();
@@ -34,7 +37,7 @@ public class HandleFileReadWrite {
 
 	public void readFromFile(String chunkName, String ServerNumber, int seekposition, int bytesToRead) {
 		try {
-			System.out.println(new String(readFromFile("/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+ServerNumber+"/"+chunkName, seekposition, bytesToRead)));
+			System.out.println(new String(readFromFile(filesystem+"/server"+ServerNumber+"/"+chunkName, seekposition, bytesToRead)));
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
@@ -58,7 +61,7 @@ public class HandleFileReadWrite {
 		int chunk = Integer.parseInt(chunks[1]);
 		
 		long msgSize = message.length();
-		String storedFile = "/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+serverNumber+"/"+chunkName;
+		String storedFile = filesystem+"/server"+serverNumber+"/"+chunkName;
 		
 		File file = new File(storedFile);
 		long fileLength = file.length();
@@ -80,7 +83,7 @@ public class HandleFileReadWrite {
 			if(replicaServerNumber != 0) {
 				serverNumber = replicaServerNumber;
 			}
-			storedFile = "/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+serverNumber+"/"+chunkName;
+			storedFile = filesystem+"/server"+serverNumber+"/"+chunkName;
 		}
 		
 		try {
@@ -97,7 +100,7 @@ public class HandleFileReadWrite {
 	}
 
 	public void createAndWriteAfterFailure(String serverNumber, String cpyTo) {
-		File[] files = new File("/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+serverNumber).listFiles();
+		File[] files = new File(filesystem+"/server"+serverNumber).listFiles();
 		int copyFromServer = Integer.parseInt(serverNumber);
 		int copyToServer = Integer.parseInt(cpyTo);
 		showFiles(files, copyFromServer, copyToServer);
@@ -121,8 +124,8 @@ public class HandleFileReadWrite {
 	 
 	    	try{
 	 
-	    	    File afile =new File("/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+copyFromServer+"/"+filename);
-	    	    File bfile =new File("/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+copyToServer+"/"+filename);
+	    	    File afile =new File(filesystem+"/server"+copyFromServer+"/"+filename);
+	    	    File bfile =new File(filesystem+"/server"+copyToServer+"/"+filename);
 	 
 	    	    inStream = new FileInputStream(afile);
 	    	    outStream = new FileOutputStream(bfile);
@@ -156,7 +159,7 @@ public class HandleFileReadWrite {
 		for(int i=1; i< noOfServers+1; i++) {
 			if(i != serverNumber) {
 				long dir = 0L;
-				File[] files = new File("/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+i).listFiles();
+				File[] files = new File(filesystem+"/server"+i).listFiles();
 					for (File file : files) {
 						 	dir = dir + file.length();		            
 					 }

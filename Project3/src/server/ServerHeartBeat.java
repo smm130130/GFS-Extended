@@ -19,11 +19,12 @@ public class ServerHeartBeat implements Runnable {
 	@Override
 	public void run() {
 		Properties ServerPort = UsefulMethods.getUsefulMethodsInstance().getPropertiesFile("spec.properties");
+		String fileSystem = ServerPort.getProperty("filesystem");
 		String serverName = ServerPort.getProperty("metadataserver");
 		String portString = ServerPort.getProperty("metadataport");//Integer.parseInt(args[1]);
 		int port = Integer.parseInt(portString.trim());
 		
-		String filePath = "/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+serverNumber;
+		String filePath = fileSystem+"/server"+serverNumber;
 		
 		try {
 			@SuppressWarnings("resource")

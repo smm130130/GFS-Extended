@@ -13,6 +13,8 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.TreeMap;
 
+import metaDataServer.HandleServers;
+
 public class UsefulMethods {
 	
 	private static volatile UsefulMethods instance = null;
@@ -66,17 +68,22 @@ public class UsefulMethods {
 		ArrayList<Integer> replicaServers = new ArrayList<>();
 		TreeMap<Long, Integer> treeMap = new TreeMap<>();
 		Properties prop = UsefulMethods.getUsefulMethodsInstance().getPropertiesFile("spec.properties");
+		String fileSystem = prop.getProperty("filesystem");
 		int serverNumber = 0;
 		int noOfServers = Integer.parseInt(prop.getProperty("numofservers"));
 		
 		for(int i=1; i< noOfServers+1; i++) {
-			long dir = 0L;
-			serverNumber = i;
-			File[] files = new File("/home/004/s/sm/smm130130/AOSproject3/FileSystem/server"+i).listFiles();
-				for (File file : files) {
-					 	dir = dir + file.length();		            
-				 }
-				 treeMap.put(dir, serverNumber);
+			if(HandleServers.getHandleServersInstance().checkUnavilServers(i)) {
+				long dir = 0L;
+				serverNumber = i;
+				File[] files = new File(fileSystem+"/server"+i).listFiles();
+					for (File file : files) {
+						 	dir = dir + file.length();		            
+					 }
+					 treeMap.put(dir, serverNumber);
+			} else {
+				continue;
+			}
 		}
 		for(Entry<Long, Integer> entry : treeMap.entrySet()) {
 			  Integer value = entry.getValue();
